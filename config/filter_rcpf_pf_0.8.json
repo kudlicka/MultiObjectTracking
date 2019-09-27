@@ -1,0 +1,12 @@
+{
+  "model": {
+    "class": "Multi"
+  },
+  "sampler": {
+    "class": "RCPF",
+    "nparticles": 16384,
+    "nsamples": 200,
+    "threshold_quantile": 0.8,
+    "zero_threshold_mode": "pf"
+  }
+}
