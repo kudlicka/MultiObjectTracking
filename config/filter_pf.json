@@ -3,6 +3,8 @@
     "class": "Multi"
   },
   "sampler": {
-    "nparticles": 4096
+    "trigger": 1.0,
+    "nparticles": 512,
+    "nsamples": 10
   }
 }

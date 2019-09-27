@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#NPARTICLES=16384
+#NSAMPLES=200
+
+NPARTICLES=512
+NSAMPLES=10
+
+# PF:
+cat > config/filter_pf.json <<EOF
+{
+  "model": {
+    "class": "Multi"
+  },
+  "sampler": {
+    "trigger": 1.0,
+    "nparticles": $NPARTICLES,
+    "nsamples": $NSAMPLES
+  }
+}
+EOF
+birch sample --input input/filter.json --config config/filter_pf.json --output output/filter_pf.yml
+
+# RCPF:
+for ZERO_THRESHOLD_MODE in pf apf
+do
+    for THRESHOLD_QUANTILE in 0.5 0.6 0.7 0.8 0.9 0.95 0.99
+    do
+        cat > config/filter_rcpf_${ZERO_THRESHOLD_MODE}_${THRESHOLD_QUANTILE}.json <<EOF
+{
+  "model": {
+    "class": "Multi"
+  },
+  "sampler": {
+    "class": "RCPF",
+    "nparticles": $NPARTICLES,
+    "nsamples": $NSAMPLES,
+    "threshold_quantile": $THRESHOLD_QUANTILE,
+    "zero_threshold_mode": "$ZERO_THRESHOLD_MODE"
+  }
+}
+EOF
+        birch sample --config "config/filter_rcpf_${ZERO_THRESHOLD_MODE}_${THRESHOLD_QUANTILE}.json" --input input/filter.json --output "output/filter_rcpf_${ZERO_THRESHOLD_MODE}_${THRESHOLD_QUANTILE}.yml" --diagnostic "diagnostic/filter_rcpf_${ZERO_THRESHOLD_MODE}_${THRESHOLD_QUANTILE}.yml"
+    done
+done

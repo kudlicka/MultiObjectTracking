@@ -11,6 +11,7 @@
   
   "manifest": {
     "source": [
+      "bi/sampler/RCPF.bi",
       "bi/data.bi",
       "bi/draw.bi",
       "bi/Global.bi",
@@ -21,16 +22,9 @@
     
     ],
     "other": [
-      "config/filter.json",
-      "config/simulate.json",
-      "config/time.json",
-      "input/filter.json",
-      "input/simulate.json",
       "LICENSE",
       "META.json",
-      "README.md",
-      "run.sh",
-      "time.sh"
+      "README.md"
     ]
   }
 }

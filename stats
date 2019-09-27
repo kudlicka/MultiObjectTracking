@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+import glob
+import yaml
+import numpy as np
+
+
+def ess(logw):
+    w = np.exp(logw - np.max(logw))
+    return np.sum(w)**2/np.sum(w*w);
+
+
+def car(logw):
+    w = np.sort(np.exp(logw - np.max(logw)))
+    c = np.cumsum(w)
+    return (2*np.sum(c)/c[-1] - 1.0) / logw.size
+
+
+for f in sorted(glob.glob("./output/filter*.yml")):
+    print("File: %s" % f)
+    data = yaml.load(open(f, 'r'))
+    if data:
+        logw = np.array([item['lweight'] for item in data])
+        print('#samples:   %d' % len(logw))
+        print('ESS:        %f' % ess(logw))
+        print('CAR:        %f' % car(logw))
+        print('Mean log Z: %f' % np.mean(logw))
+        print('Var log Z:  %f' % np.var(logw))
+        if './output/filter_rcpf_' in f:
+            g = f.replace('/output/', '/diagnostic/')
+            data_diag = yaml.load(open(g, 'r'))
+            if data_diag:
+                N = data_diag[0]['nparticles']
+                rho = np.mean(list(np.mean(item['propagations']) for item in data_diag)) / N
+                print('Rho:        %f' % rho)
+    print()

@@ -3,6 +3,6 @@
     "class": "Multi"
   },
   "sampler": {
-    "nsteps": 100
+    "nsteps": 50
   }
 }
