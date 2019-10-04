@@ -7,18 +7,26 @@ function quantile(samples:Real[_], p:Real) -> Real {
 }
 
 class RCPF < AliveParticleFilter {
+  auto firstRun <- true;
   thresholdQuantile:Real <- 0.8;
-  zeroThresholdMode:String <- "apf";
+  zeroThresholdMode:String <- "pf";
   C:Queue<Real>;
+  cwalk:Real!;
 
-  /*
   function start() {
+    /*
     for auto n in 1..N {
       x[n].h.setMode(PLAY_IMMEDIATE);
     }
+    */
     super.start();
+    cwalk <- C.walk();
   }
-  */
+
+  function finish() {
+    super.finish();
+    firstRun <- false;
+  }
 
   function step() {
     cpp {{
@@ -34,19 +42,20 @@ class RCPF < AliveParticleFilter {
       }}
     }
 
-    auto m <- max(w);
-    auto W <- 0.0;
-    for auto n in 1..length(w) {
-      W <- W + exp(w[n] - m);
+    c:Real;
+    if firstRun {
+      c <- quantile(w, thresholdQuantile);
+      C.pushBack(c);
+    } else {
+      cwalk?;
+      c <- cwalk!;
     }
 
-    auto c <- quantile(w, thresholdQuantile);
-    C.pushBack(c);
-
+    auto m <- max(w);
     Wn:Real[N];
     acc:Boolean[N];
     parallel for auto n in 1..N {
-      Wn[n] <- 0.0;
+      Wn[n] <- exp(w[n] - m);
       if c == -inf {
         if zeroThresholdMode == "apf" {
           acc[n] <- (w[n] != -inf);
@@ -82,6 +91,8 @@ class RCPF < AliveParticleFilter {
       }
     }
 
+    auto W <- sum(Wn);
+
     /* propagate and weight until one further acceptance, which is discarded
      * for unbiasedness in the normalizing constant estimate */
     w':Real;
@@ -90,6 +101,7 @@ class RCPF < AliveParticleFilter {
       auto a' <- ancestor(w0);
       auto x' <- clone<ForwardModel>(x0[a']);
       w' <- x'.step();
+      W <- W + exp(w' - m);
       cpp {{
       ++P;
       }}
@@ -105,6 +117,7 @@ class RCPF < AliveParticleFilter {
         acc' <- simulate_bernoulli(exp(w' - c));
       }
     } while !acc';
+    W <- W - exp(w' - m);
 
     /* update propagations */
     Q:Integer;
@@ -113,8 +126,8 @@ class RCPF < AliveParticleFilter {
     }}
     this.P.pushBack(Q);
 
-    auto Z <- m + log(W + sum(Wn));
-    this.Z.pushBack(Z - log(Q - 1));
+    this.Z.pushBack(log(W) + m - log(Q - 1));
+    // this.Z.pushBack(log_sum_exp(w) - log(Q - 1));
   }
 
   function reduce() {
